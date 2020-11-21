@@ -1,0 +1,57 @@
+STEP1: "IMPORT FILES FROM A FOLDER"
+
+import pandas as pd
+import os
+import math
+import openpyxl
+wbkName = r"MENTION THE PATH OF THE FILE"              #create an xlsx O/P file in the folder where data files are stored and then mention its path 
+wbk =openpyxl.load_workbook(wbkName)
+wks =wbk.worksheets[0]
+cwd = os.path.abspath(r'MENTION THE FOLDER PATH OF THE I/P FILES')                   #Mention folder path
+files = os.listdir(cwd) 
+df1=pd.DataFrame()
+for file in files:
+    print(file)
+    if file.endswith('.xls'):
+        print(file)
+
+=========================================================================================================================
+
+STEP2: RMSD AND CC CALCULATION COMBINED FOR ALL THE I/P FILES GIVEN IN A FOLDER
+
+strtrow=0
+wks.cell(row=strtrow+1, column=1).value = 'CC'
+wks.cell(row=strtrow+1, column=2).value = 'RMSD'
+path=r'MENTION THE FOLDER PATH OF THE I/P FILES'
+
+for f in range(len(files)):
+    if files[f].endswith('.xls'):
+        dw=pd.read_table(os.path.join(path,files[f]),header=None)
+        M3=dw[:][1].mean()                                        #gives mean for the second column of each file
+        M4=dw[:][2].mean()                                        #gives mean for the third column of each file
+        numer=0
+        den_sum=0
+        den_sum2=0
+        summ=0
+        for i in range (0,2001):                                 # Range of rows should be mentioned
+            up=(dw[1][i]-M3)*(dw[2][i]-M4)
+            numer=up+numer
+            deno1=(dw[1][i]-M3)**2
+            den_sum=deno1+den_sum
+            deno2=(dw[2][i]-M4)**2
+            den_sum2=den_sum2+deno2
+            numerator=(dw[1][i]-dw[2][i])**2
+            summ=summ+numerator
+        lower=(den_sum*den_sum2)
+        denominator=math.sqrt(lower)
+        cc=numer/denominator                                          # coefficient of correlation
+        avg=(summ/(i+1))
+        rmsd=math.sqrt(avg)                                           # RMSD
+        print("CC",cc,"for",files[f])
+        print("RMSD",rmsd,"for",files[f])
+        wks.cell(row=strtrow+2, column=1).value = cc
+        wks.cell(row=strtrow+2, column=2).value = rmsd
+        strtrow=strtrow+1
+       
+wbk.save(wbkName)
+wbk.close   
