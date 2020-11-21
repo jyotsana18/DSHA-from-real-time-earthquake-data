@@ -1,0 +1,190 @@
+import pandas as pd
+import numpy as np
+import math
+from math import radians,sin,cos,sqrt,asin,log
+df=pd.read_excel (r'C:\Users\91920\OneDrive\Desktop\har_pb_int.xlsx',sheet_name='DSHA')
+df1=pd.read_excel (r'C:\Users\91920\OneDrive\Desktop\har_pb_int.xlsx',sheet_name='Sheet1')
+import openpyxl
+ 
+myfile= open("C:\\myoutput\\dsha.csv","w+")
+myfile.write("PGA,Mw,R_min,fault_ID")
+myfile.write("\n")
+
+def ketan(Mw,f_dep,R_dist,Vs30,a1,a2,a3,a4,a5,a6,a7,sigma):       #valid for Mw 4 to 9 and hypocentral distance btw 10 to 750 km
+    R_hypo=np.sqrt((R_dist)**2+(f_dep)**2)
+    if(R_hypo<=750 and R_hypo>=10 and Mw>=4 and Mw<=9):
+        lny1=a1+(a2*(Mw-6))
+        lny2=(a3*(9-Mw)**2)
+        lny3=a4*math.log(R_hypo)
+        if (R_dist<300 and Mw<6.0):
+            lny4=a5*math.log(R_hypo)
+        else:
+            lny4=a6*math.log(R_hypo)
+        lny5=(a7*R_hypo)
+        lny=lny1+lny2+lny3+lny4*(Mw-6)+lny5    # pga in "g", median pga
+        PGA=math.exp(lny)
+        lny84=lny1+lny2+lny3+lny4*(Mw-6)+lny5+sigma    # pga in "g", median pga
+        PGA84=math.exp(lny84)                          # pga 84 percentile
+        lny34=lny1+lny2+lny3+lny4*(Mw-6)+lny5-sigma
+        PGA34=math.exp(lny34)  
+        if(Vs30>1500): #     SC='A';
+            lnPGA=math.log(1*PGA);
+            lnPGA84=math.log(1*PGA84);
+            lnPGA34=math.log(1*PGA34)
+        elif(Vs30>760):#%     SC='B';
+            lnPGA=math.log(1.25*PGA);
+            lnPGA84=math.log(1.25*PGA84);
+            lnPGA34=math.log(1.25*PGA34)
+        elif(Vs30>360): #%     SC='C';
+            if(PGA<=0.2):                       #this will change when you consider 84 percentile
+                lnPGA=math.log(1.5*PGA)
+                lnPGA84=math.log(1.5*PGA84)
+                lnPGA34=math.log(1.5*PGA34)
+            elif(PGA>=0.5):
+                lnPGA=math.log(1.25*PGA)
+                lnPGA84=math.log(1.25*PGA84)
+                lnPGA34=math.log(1.25*PGA34)
+            else:
+                lnPGA=math.log((-1.25*PGA+1.75)*PGA);
+                lnPGA84=math.log((-1.25*PGA84+1.75)*PGA84);
+                lnPGA34=math.log((-1.25*PGA34+1.75)*PGA34)
+        elif(Vs30>180):#    SC='D';
+            if(PGA<=0.2):
+                lnPGA=math.log(2*PGA);
+                lnPGA84=math.log(2*PGA84)
+                lnPGA34=math.log(2*PGA34)
+            elif(PGA>=0.5):
+                lnPGA=math.log(1.25*PGA);
+                lnPGA84=math.log(1.25*PGA84)
+                lnPGA34=math.log(1.25*PGA34)
+            elif(PGA>0.3):
+                lnPGA=math.log((-1.25*PGA+1.875)*PGA);
+                lnPGA84=math.log((-1.25*PGA84+1.875)*PGA84)
+                lnPGA34=math.log((-1.25*PGA84+1.875)*PGA34)
+            else:
+                lnPGA=math.log((-2.5*PGA+2.25)*PGA);
+                lnPGA84=math.log((-2.5*PGA84+2.25)*PGA84);
+                lnPGA34=math.log((-2.5*PGA84+2.25)*PGA34)
+       
+        return (float(math.exp(lnPGA84)),float(math.exp(lnPGA)),float(math.exp(lnPGA34)))
+    else:
+        return(0.0,0.0,0.0)
+
+    
+    
+def kumar2019(m,h,rjb,Vs30):  # mag range 5-6.8 and hypocentral,r is hypocentral distance range is 10 to 150 km given in paper but here by mistake 250 is used if undone then entire llh has to be repeated
+    r=math.sqrt(rjb**2+h**2)
+    if (m>=5 and m<=7 and r>=15 and r<=150):
+        std=0.281
+        e=math.log(10**std)
+        log_A=(-1.091)+(0.3245*m)-1.0632*math.log10(r+math.exp(0.4561*m))   #A is in g, median pga
+        PGA=10**(log_A)
+        PGA84=10**(log_A+std)
+        PGA34=10**(log_A-std)
+        if(Vs30>1500): #     SC='A';
+            lnPGA=math.log(1*PGA)
+            lnPGA84=math.log(1*PGA84)
+            lnPGA34=math.log(1*PGA34)
+        elif(Vs30>760):#%     SC='B';
+            lnPGA=math.log(1.25*PGA)
+            lnPGA84=math.log(1.25*PGA84)
+            lnPGA34=math.log(1.25*PGA34)
+        elif(Vs30>360): #%     SC='C';
+            if(PGA<=0.2):
+                lnPGA=math.log(1.5*PGA)
+                lnPGA84=math.log(1.5*PGA84)
+                lnPGA34=math.log(1.5*PGA34)
+            elif(PGA>=0.5):
+                lnPGA=math.log(1.25*PGA)
+                lnPGA84=math.log(1.25*PGA84)
+                lnPGA34=math.log(1.25*PGA34)
+            else:
+                lnPGA=math.log((-1.25*PGA+1.75)*PGA)
+                lnPGA84=math.log((-1.25*PGA84+1.75)*PGA84)
+                lnPGA84=math.log((-1.25*PGA34+1.75)*PGA34)
+        elif(Vs30>180):#    SC='D';
+            if(PGA<=0.2):
+                lnPGA=math.log(2*PGA)
+                lnPGA84=math.log(2*PGA84)
+                lnPGA34=math.log(2*PGA34)
+            elif(PGA>=0.5):
+                lnPGA=math.log(1.25*PGA)
+                lnPGA84=math.log(1.25*PGA84)
+                lnPGA34=math.log(1.25*PGA34)
+            elif(PGA>0.3):
+                lnPGA=math.log((-1.25*PGA+1.875)*PGA)
+                lnPGA84=math.log((-1.25*PGA84+1.875)*PGA84)
+                lnPGA34=math.log((-1.25*PGA84+1.875)*PGA34)
+            else:
+                lnPGA=math.log((-2.5*PGA+2.25)*PGA)
+                lnPGA84=math.log((-2.5*PGA84+2.25)*PGA84)
+                lnPGA34=math.log((-2.5*PGA34+2.25)*PGA34)
+      
+        return (float(math.exp(lnPGA84)),float(math.exp(lnPGA)),float(math.exp(lnPGA34)))
+    
+    else:
+        return(0.0,0.0,0.0)
+
+
+j=0
+f_dep=28
+
+for y in range (1,26):
+    i=0
+    max_pga=0.0
+    max_loc=0.0
+    a1=df1['a1'][j]
+    a2=df1['a2'][j]
+    a3=df1['a3'][j]
+    a4=df1['a4'][j]
+    a5=df1['a5'][j]
+    a6=df1['a6'][j]
+    a7=df1['a7'][j]
+    sigma=df1['sigma'][j]
+    print("j=",j,"a1=",a1,"a2",a2,"a3=",a3,"a4=",a4,"a5=",a5,"a6=",a6,"a7=",a7,"sigma=",sigma)
+
+    for x in range(1,295):
+        if(df['Mmax1'][i]=='-'):
+            i=i+1
+            continue
+        #print("inputs i=",i, " mmax1=", df['Mmax1'][i], " r_min=", f_dep,df['R_min'][i])
+        
+            
+        if(df['R_min'][i]<=100):
+            value2=kumar2019(df['Mmax1'][i],f_dep,df['R_min'][i],1500)
+            value3=ketan(df['Mmax1'][i],f_dep,df['R_min'][i],1500,a1,a2,a3,a4,a5,a6,a7,sigma)
+            w2=0.45
+            w3=0.55
+            pga84=((value2[0])*w2)+((value3[0])*w3)
+            pga=((value2[1])*w2)+((value3[1])*w3)
+            pga34=((value2[2])*w2)+((value3[2])*w3)
+                
+        elif(df['R_min'][i]>100 and df['R_min'][i]<=300):
+            value1=kumar2019(df['Mmax1'][i],f_dep,df['R_min'][i],1500)
+            value2=ketan(df['Mmax1'][i],f_dep,df['R_min'][i],1500,a1,a2,a3,a4,a5,a6,a7,sigma)
+            w1=0.65
+            w2=0.35
+            pga84=((value1[0])*w1)+((value2[0])*w2)
+            pga=((value1[1])*w1)+((value2[1])*w2)
+            pga34=((value1[2])*w1)+((value2[2])*w2)
+            
+        elif(df['R_min'][i]>300 and df['R_min'][i]<=500):
+            value1=ketan(df['Mmax1'][i],f_dep,df['R_min'][i],1500,a1,a2,a3,a4,a5,a6,a7,sigma)
+            pga84=value1[0]
+            pga=value1[1]
+            pga34=value1[2]
+            
+        if max_pga<pga:
+            max_pga=pga
+            print("max_pga===",max_pga)
+            max_loc=i
+            
+        i=i+1
+    myfile.write(str(max_pga)+", ")
+    myfile.write(str(df['Mmax1'][max_loc])+", ")
+    myfile.write(str(df['R_min'][max_loc])+", ")
+    myfile.write(str(df['fault_id'][max_loc])+", ")
+    myfile.write("\n")
+    print("max_pga=",max_pga)
+    j=j+1
+myfile.close()
