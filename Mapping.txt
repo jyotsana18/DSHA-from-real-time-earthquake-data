@@ -1,0 +1,38 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import xlrd
+import pandas
+loc = ("#The file location where the data file is")              
+# To open Workbook 
+wb = xlrd.open_workbook(loc)
+n = len(wb.sheet_names())
+sheet = wb.sheet_by_index(1) 
+# For latitude and Longitude row 0 and column 0 
+Long=sheet.row_values(0)[1:]
+Lat=sheet.col_values(0)[1:]
+for i in range(2,n):
+    sheet = wb.sheet_by_index(i)
+    a=sheet.name
+    Z=pandas.read_excel(loc,sheet_name=a,header=None)
+    fig = plt.figure(figsize=(12,8))
+    left, bottom, width, height = 0.1, 0.1, 0.8, 0.8
+    ax = fig.add_axes([left, bottom, width, height]) 
+    X, Y = np.meshgrid(Long, Lat)
+    cp = plt.contourf(X, Y, Z,cmap='Blues')
+    #cp = plt.contourf(X, Y, Z)
+    clb=plt.colorbar(cp)
+    ticklabs = clb.ax.get_yticklabels()
+    clb.ax.set_yticklabels(ticklabs,fontsize=15,fontname='Times New Roman')
+    clb.set_label('PGA (g)', labelpad=-45, y=1.07, rotation=0,fontname='Times New Roman', fontsize=18)
+    ax.set_xlabel('Longitude (E)',fontname='Times New Roman', fontsize=20,weight='bold')
+    ax.set_ylabel('Latitude (N)',fontname='Times New Roman', fontsize=20,weight='bold')
+    plt.xticks(fontname='Times New Roman',fontsize=17)
+    plt.yticks(fontname='Times New Roman',fontsize=17)
+    for c in cp.collections:
+        c.set_edgecolor("face")
+    b=a[:-4]
+    c=" "                   # File location where the figures are to be saved
+    print (a)
+    plt.savefig(c)
+    plt.show()
+    
