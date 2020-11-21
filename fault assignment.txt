@@ -1,0 +1,61 @@
+import pandas as pd
+import numpy as np
+from math import radians,sin,cos,sqrt,asin
+df=pd.read_excel (r'Enter input file location')
+import openpyxl
+ 
+wbkName = r"output file location"
+wbk = openpyxl.load_workbook(wbkName)
+wks =wbk.worksheets[0]
+
+def find_dist(lat1,lon1,lon2,lat2):    		 # haversine distance formula
+    dlon = radians( lon2 - lon1)
+    dlat = radians(lat2 - lat1)
+    lat1= radians(lat1)
+    lat2= radians(lat2)
+    
+    a = sin(dlat/2)**2 + cos(lat1)*cos(lat2)*sin(dlon/2)**2
+    c = 2*asin(sqrt(a))
+    dist = 6372.8 * c
+    return dist;
+    
+min_dist=9999999
+MIN_DIS=99999
+
+
+for j in range (0, 575):			#fix the columm size of the earthquake epicentre
+    usrLon=df['EQLong'][j]			#column name for earthquake epicentre location
+    usrLat=df['EQLat'][j]
+    i=0
+    strtrow=0
+    min_dist=9999999
+    MIN_DIS=99999
+    MIN_FLT_NAME=""
+    falutlname=""
+    for colVal in df['Fault data']:
+        if(str(colVal)=='Fault'):
+            if(i>=2):
+                falutlname=df['Fault data'][strtrow]
+                
+            min_dist=9999999
+            strtrow = i+1
+        else:
+            if(min_dist==9999999):
+                falutlname=colVal
+            c_dist=find_dist(df['Lat'][i], df['Long'][i], usrLon,usrLat)
+
+
+            if min_dist>c_dist:
+                min_dist=c_dist
+                
+            if MIN_DIS>min_dist:
+                MIN_DIS=min_dist
+                MIN_FLT_NAME=falutlname
+        i=i+1
+    print("Min value=", MIN_DIS, " j=",j)
+    wks.cell(row=j+2, column=8).value = MIN_FLT_NAME
+   # wks.cell(row=j+2, column=10).value = float(MIN_DIS)
+    j=j+1
+    
+wbk.save(wbkName)
+wbk.close
