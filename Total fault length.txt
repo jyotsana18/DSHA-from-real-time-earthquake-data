@@ -1,0 +1,44 @@
+import pandas as pd
+import numpy as np
+from math import radians,sin,cos,sqrt,asin
+df=pd.read_excel (r'ENTER LOCATION OF INPUT FILE')
+import openpyxl
+ 
+wbkName = r"ENTER LOCATION OF FILE FOR OUTPUT"
+wbk = openpyxl.load_workbook(wbkName)
+wks =wbk.worksheets[0]
+
+
+
+
+def find_dist(lat1,lon1,lon2,lat2):
+    dlon = radians( lon2 - lon1)
+    dlat = radians(lat2 - lat1)
+    lat1= radians(lat1)
+    lat2= radians(lat2)
+    
+    a = sin(dlat/2)**2 + cos(lat1)*cos(lat2)*sin(dlon/2)**2
+    c = 2*asin(sqrt(a))
+    dist = 6372.8 * c
+    return dist;
+
+rowsum=0.0
+print("rowsum=",rowsum)
+startrownum=0
+for i in range(# ENTER THE RANGE FOR TOTAL FAULT DATA):      
+    if (wks.cell(row=i+3, column=2).value) is not None :
+        c_dist=find_dist(df['Lat'][i], df['Long'][i],df['Long'][i+1],df['Lat'][i+1])
+        if(np.isnan(c_dist)):
+            print("c_dist=>",c_dist)
+        else:
+            rowsum=rowsum+c_dist
+        wks.cell(row=i+3, column=5).value = float(c_dist)
+        i=i+1
+    else:
+        wks.cell(row=startrownum+3, column=4).value = rowsum
+        startrownum=i+1
+        rowsum=0.0
+        
+print("THE END")    
+wbk.save(wbkName)
+wbk.close
